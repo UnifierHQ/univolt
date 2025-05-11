@@ -71,15 +71,27 @@ class HttpClient:
         if params:
             kwargs["params"] = params
 
-        async with self.session.request(method, url, **kwargs) as resp:
-            text = await resp.text()
-            if text:
-                try:
-                    response = _json.loads(await resp.text())
-                except ValueError:
-                    raise HTTPError(f"Invalid json response:\n{text}") from None
+        while True:
+            try:
+                async with self.session.request(method, url, **kwargs) as resp:
+                    text = await resp.text()
+                    if text:
+                        try:
+                            response = _json.loads(await resp.text())
+                        except ValueError:
+                            raise HTTPError(f"Invalid json response:\n{text}") from None
+                    else:
+                        response = text
+            except aiohttp.client_exceptions.ClientOSError as exc:
+                # Attempt to handle connection resets
+                # Shamelessly copied from MCausc78/pyvolt
+                if exc.errno in (54, 104, 10054):
+                    await asyncio.sleep(1.5)
+                    continue
+                raise
             else:
-                response = text
+                # Successful request, exit loop
+                break
 
         resp_code = resp.status
 
