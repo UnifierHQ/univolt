@@ -1,7 +1,7 @@
 [project]
-name = "revolt.py"
+name = "univolt"
 dynamic = ["version"]
-description = "Python wrapper for the revolt.chat API"
+description = "A fork of Revolt.py for the Unifier project "
 requires-python = ">=3.9"
 license = "MIT"
 readme = "README.md"
