@@ -149,6 +149,35 @@ class WebsocketHandler:
         if server := self.state.get_channel(payload["channel"]).server_id:
             await self._wait_for_server_ready(server)
 
+        # Fix: ensure all channels exist
+        # noinspection PyTypedDict
+        if payload["channel"] not in self.state.channels:
+            # Fetch and add channel to cache
+            channel = await self.state.http.fetch_channel(payload["channel"])
+            self.state.add_channel(channel)
+        else:
+            channel = self.state.get_channel(payload["channel"])
+
+        server_id = channel.server_id
+
+        # Fix: ensure Member object exists for author
+        if payload.get("system"):
+            author_id: str = payload.get("system").get("id", payload["author"])
+        else:
+            author_id: str = payload["author"]
+
+        # For this part we'll assume the server always exists in the cache
+        if author_id not in self.state.servers[server_id]._members:
+            # Ensure the User object also exists
+            if author_id not in self.state.users:
+                # Fetch and add user to cache
+                user = await self.state.http.fetch_user(author_id)
+                self.state.add_user(user)
+
+            # Fetch and add member to cache
+            member = await self.state.http.fetch_member(server_id, author_id)
+            self.state.add_member(server_id, member)
+
         message = self.state.add_message(cast(MessagePayload, payload))
 
 
@@ -253,6 +282,14 @@ class WebsocketHandler:
         server = self.state.get_server(payload["id"])
 
         old_server = copy(server)
+
+        # Fix: ensure all channels exist
+        # noinspection PyTypedDict
+        for channel in payload["data"]["channels"]:
+            if channel not in self.state.channels:
+                # Fetch and add channel to cache
+                channel = await self.state.http.fetch_channel(channel)
+                self.state.add_channel(channel)
 
         server._update(**payload["data"])
 
