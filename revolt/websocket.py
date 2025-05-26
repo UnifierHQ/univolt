@@ -285,7 +285,7 @@ class WebsocketHandler:
 
         # Fix: ensure all channels exist
         # noinspection PyTypedDict
-        for channel in payload["data"]["channels"]:
+        for channel in payload["data"].get("channels", {}):
             if channel not in self.state.channels:
                 # Fetch and add channel to cache
                 channel = await self.state.http.fetch_channel(channel)
