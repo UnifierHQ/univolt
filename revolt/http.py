@@ -79,7 +79,8 @@ class HttpClient:
                         try:
                             response = _json.loads(await resp.text())
                         except ValueError:
-                            raise HTTPError(f"Invalid json response:\n{text}") from None
+                            # In revolt.py this would print the full response, but there have been crashes caused by this, so we will omit it
+                            raise HTTPError(f"Invalid json response (body omitted to prevent crashes)") from None
                     else:
                         response = text
             except aiohttp.client_exceptions.ClientOSError as exc:
